@@ -11,6 +11,13 @@ def main():
     
     args = parser.parse_args()
     
+    # Redirect stdout and stderr to GCS log file
+    os.makedirs(args.output_dir, exist_ok=True)
+    log_path = os.path.join(args.output_dir, "stdout.log")
+    log_file = open(log_path, "w", buffering=1) # Line buffering
+    sys.stdout = log_file
+    sys.stderr = log_file
+    
     print(f"Starting UniTEX pipeline...")
     print(f"  Image: {args.image_path}")
     print(f"  Mesh: {args.mesh_path}")

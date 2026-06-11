@@ -1,3 +1,4 @@
+source /usr/local/google/home/jksun/Apps/miniforge3/etc/profile.d/conda.sh
 conda create -n unitex python=3.10 --yes
 conda activate unitex
 conda install cudatoolkit=11.8 --yes # check nvcc -V, it should be 11.8
