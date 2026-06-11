@@ -38,7 +38,7 @@ class RMBG2:
         ckpt_id = "/xcloud-shared/jksun/models/RMBG-2.0"
         if not os.path.exists(ckpt_id):
             ckpt_id = f"briaai/RMBG-2.0"
-        model = AutoModelForImageSegmentation.from_pretrained(ckpt_id, trust_remote_code=True)
+        model = AutoModelForImageSegmentation.from_pretrained(ckpt_id, trust_remote_code=True, local_files_only=True)
         # torch.set_float32_matmul_precision(['high', 'highest'][0])
         model.to('cuda').eval()
         self.model = model
@@ -102,28 +102,29 @@ def build_pipeline(pretrain_models=None, pipeline_name='texture_plus', model='rg
             flux_path,
             subfolder="transformer",
             quantization_config=quantization_config,
-            torch_dtype=torch.bfloat16
+            torch_dtype=torch.bfloat16,
+            local_files_only=True
         ),
         text_encoder=None,
         text_encoder_2=None,
         torch_dtype=torch.bfloat16,
+        local_files_only=True
     )
     unitex_local_dir = "/xcloud-shared/jksun/models/UniTEX"
     
     mv_lora_local = os.path.join(unitex_local_dir, 'mv_lora_weights.safetensors')
     if os.path.exists(mv_lora_local):
-        lora_id = mv_lora_local
+        pipeline.load_lora_weights(unitex_local_dir, weight_name='mv_lora_weights.safetensors', adapter_name='texture')
     else:
         lora_id = hf_hub_download(repo_id='lyxun/UniTEX', filename = 'mv_lora_weights.safetensors' ,repo_type="model")
+        pipeline.load_lora_weights(lora_id, adapter_name='texture')
         
     delight_lora_local = os.path.join(unitex_local_dir, 'delight_lora_weights.safetensors')
     if os.path.exists(delight_lora_local):
-        lora_id_delight = delight_lora_local
+        pipeline.load_lora_weights(unitex_local_dir, weight_name='delight_lora_weights.safetensors', adapter_name='delight')
     else:
         lora_id_delight = hf_hub_download(repo_id='lyxun/UniTEX', filename = 'delight_lora_weights.safetensors' ,repo_type="model")
-        
-    pipeline.load_lora_weights(lora_id, adapter_name='texture')
-    pipeline.load_lora_weights(lora_id_delight, adapter_name='delight')
+        pipeline.load_lora_weights(lora_id_delight, adapter_name='delight')
     weights_for_texture = [1.,0.]
     weights_for_delight = [0.,1.]
     adapter_names = ['texture','delight']
