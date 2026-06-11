@@ -34,7 +34,10 @@ from TSD_SR.sr_pipeline import TSDSRPipeline
 
 class RMBG2:
     def __init__(self, pretrain_models=None):
-        ckpt_id = f"briaai/RMBG-2.0"
+        import os
+        ckpt_id = "/xcloud-shared/jksun/models/RMBG-2.0"
+        if not os.path.exists(ckpt_id):
+            ckpt_id = f"briaai/RMBG-2.0"
         model = AutoModelForImageSegmentation.from_pretrained(ckpt_id, trust_remote_code=True)
         # torch.set_float32_matmul_precision(['high', 'highest'][0])
         model.to('cuda').eval()
@@ -88,10 +91,15 @@ def build_pipeline(pretrain_models=None, pipeline_name='texture_plus', model='rg
             bnb_4bit_quant_type="nf4",
             bnb_4bit_compute_dtype=torch.bfloat16
         )
+    import os
+    flux_path = "/xcloud-shared/jksun/models/FLUX.1-dev"
+    if not os.path.exists(flux_path):
+        flux_path = 'black-forest-labs/FLUX.1-dev'
+        
     pipeline:FluxPipeline = FluxPipeline.from_pretrained(
-        'black-forest-labs/FLUX.1-dev',
+        flux_path,
         transformer=FluxTransformer2DModel.from_pretrained(
-            'black-forest-labs/FLUX.1-dev',
+            flux_path,
             subfolder="transformer",
             quantization_config=quantization_config,
             torch_dtype=torch.bfloat16
@@ -100,8 +108,20 @@ def build_pipeline(pretrain_models=None, pipeline_name='texture_plus', model='rg
         text_encoder_2=None,
         torch_dtype=torch.bfloat16,
     )
-    lora_id = hf_hub_download(repo_id='lyxun/UniTEX', filename = 'mv_lora_weights.safetensors' ,repo_type="model")
-    lora_id_delight = hf_hub_download(repo_id='lyxun/UniTEX', filename = 'delight_lora_weights.safetensors' ,repo_type="model")
+    unitex_local_dir = "/xcloud-shared/jksun/models/UniTEX"
+    
+    mv_lora_local = os.path.join(unitex_local_dir, 'mv_lora_weights.safetensors')
+    if os.path.exists(mv_lora_local):
+        lora_id = mv_lora_local
+    else:
+        lora_id = hf_hub_download(repo_id='lyxun/UniTEX', filename = 'mv_lora_weights.safetensors' ,repo_type="model")
+        
+    delight_lora_local = os.path.join(unitex_local_dir, 'delight_lora_weights.safetensors')
+    if os.path.exists(delight_lora_local):
+        lora_id_delight = delight_lora_local
+    else:
+        lora_id_delight = hf_hub_download(repo_id='lyxun/UniTEX', filename = 'delight_lora_weights.safetensors' ,repo_type="model")
+        
     pipeline.load_lora_weights(lora_id, adapter_name='texture')
     pipeline.load_lora_weights(lora_id_delight, adapter_name='delight')
     weights_for_texture = [1.,0.]
@@ -126,8 +146,14 @@ def build_pipeline(pretrain_models=None, pipeline_name='texture_plus', model='rg
 
     
 def build_ltm(pretrain_models=None):
+    import os
     from LTM.rgb_field import RGBFieldVAE
-    pretrain_ltm_ckpt = hf_hub_download(repo_id='lyxun/UniTEX', filename='ltm_model_weights.bin',repo_type="model")
+    unitex_local_dir = "/xcloud-shared/jksun/models/UniTEX"
+    ltm_local = os.path.join(unitex_local_dir, 'ltm_model_weights.bin')
+    if os.path.exists(ltm_local):
+        pretrain_ltm_ckpt = ltm_local
+    else:
+        pretrain_ltm_ckpt = hf_hub_download(repo_id='lyxun/UniTEX', filename='ltm_model_weights.bin',repo_type="model")
     color_field_vae = RGBFieldVAE(cfg_path='LTM/configs/texture_model/textureman.yaml',pretrain_ckpt = pretrain_ltm_ckpt)
     color_field_vae = color_field_vae.eval().requires_grad_(False).to(device='cpu')
     color_field_vae_cpu_offload = True

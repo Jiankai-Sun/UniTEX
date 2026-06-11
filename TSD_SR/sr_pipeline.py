@@ -26,8 +26,12 @@ tensor_transforms = transforms.Compose([
             ])
 
 def parse_args():
+    import os
+    sd3_path = "/xcloud-shared/jksun/models/stable-diffusion-3-medium-diffusers"
+    if not os.path.exists(sd3_path):
+        sd3_path = "stabilityai/stable-diffusion-3-medium-diffusers/"
     parser = argparse.ArgumentParser()
-    parser.add_argument("--pretrained_model_name_or_path", type=str, default="stabilityai/stable-diffusion-3-medium-diffusers/", help='path to the pretrained sd3')
+    parser.add_argument("--pretrained_model_name_or_path", type=str, default=sd3_path, help='path to the pretrained sd3')
     parser.add_argument("--lora_dir", type=str, default="TSD-SR/checkpoint/tsdsr/", help='path to tsd-sr lora weights')
     parser.add_argument("--embedding_dir", type=str, default="TSD-SR/dataset/default", help='path to prompt embeddings')
     parser.add_argument("--rank", type=int, default=64, help='rank for transformer')
